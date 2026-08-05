@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voting Legislation Impact Coder</title>
+<style>
+  :root {
+    --paper: #f6f3ec;
+    --paper-raised: #fffdf8;
+    --ink: #211d16;
+    --ink-soft: #5d564a;
+    --rule-line: #d9d2c3;
+    --masthead: #1d2a24;
+    --masthead-ink: #f2efe6;
+    --restrictive: #a03123;
+    --restrictive-bg: #f7e4e0;
+    --expansive: #2c6e49;
+    --expansive-bg: #e2efe6;
+    --interference: #8a5a12;
+    --interference-bg: #f6ecd8;
+    --neutral: #6b665c;
+    --neutral-bg: #ecE8dd;
+    --error: #7c2d12;
+    --accent: #21563f;
+    --serif: "Source Serif 4", "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: "Inter", ui-sans-serif, system-ui, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background:
+      repeating-linear-gradient(0deg, transparent 0 27px, rgba(33,29,22,.025) 27px 28px),
+      var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+
+  /* ── Masthead ─────────────────────────────────────────── */
+  header {
+    background: var(--masthead);
+    color: var(--masthead-ink);
+    border-bottom: 4px double #c9a86a;
+    padding: 30px clamp(20px, 5vw, 64px) 26px;
+  }
+  header .kicker {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: #c9a86a;
+    margin-bottom: 10px;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: clamp(26px, 3.4vw, 40px);
+    letter-spacing: -0.01em;
+    line-height: 1.12;
+    max-width: 21em;
+  }
+  header p.sub {
+    margin-top: 12px;
+    max-width: 62ch;
+    color: #bcc5bd;
+    font-size: 14px;
+  }
+  header .catkey { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px 22px; font-size: 12.5px; }
+  header .catkey span::before {
+    content: "";
+    display: inline-block; width: 9px; height: 9px; border-radius: 2px;
+    margin-right: 7px; transform: translateY(.5px);
+  }
+  .k-restrictive::before { background: #d96a5a; }
+  .k-expansive::before { background: #6fbf8f; }
+  .k-interference::before { background: #d9a13f; }
+  .k-neutral::before { background: #9a958a; }
+
+  main {
+    display: grid;
+    grid-template-columns: minmax(320px, 420px) 1fr;
+    gap: clamp(20px, 3vw, 44px);
+    padding: clamp(20px, 4vw, 48px) clamp(20px, 5vw, 64px) 80px;
+    align-items: start;
+  }
+  @media (max-width: 980px) { main { grid-template-columns: 1fr; } }
+
+  /* ── Panels ───────────────────────────────────────────── */
+  .panel {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule-line);
+    border-radius: 6px;
+    box-shadow: 0 1px 0 rgba(33,29,22,.06), 0 12px 28px -18px rgba(33,29,22,.35);
+  }
+  .panel-head {
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--rule-line);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  }
+  .panel-head h2 {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .panel-head .hint { font-size: 12px; color: var(--ink-soft); }
+  .panel-body { padding: 18px; }
+
+  label.small {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin: 0 0 6px;
+  }
+  textarea {
+    width: 100%;
+    min-height: 180px;
+    resize: vertical;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--ink);
+    background: #fbf9f2;
+    border: 1px solid var(--rule-line);
+    border-radius: 4px;
+    padding: 12px;
+    white-space: pre;
+    overflow-x: auto;
+  }
+  textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .or-row { display: flex; align-items: center; gap: 10px; margin: 14px 0; color: var(--ink-soft); font-size: 12px; }
+  .or-row::before, .or-row::after { content: ""; flex: 1; border-top: 1px solid var(--rule-line); }
+  input[type="file"] { font-size: 13px; width: 100%; }
+
+  button.primary {
+    margin-top: 18px;
+    width: 100%;
+    background: var(--accent);
+    color: #f2efe6;
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: .01em;
+    border: none;
+    border-radius: 5px;
+    padding: 12px 18px;
+    cursor: pointer;
+    transition: background .15s ease, transform .1s ease;
+  }
+  button.primary:hover:not(:disabled) { background: #1a4632; }
+  button.primary:active:not(:disabled) { transform: translateY(1px); }
+  button.primary:disabled { opacity: .55; cursor: default; }
+
+  .progress { margin-top: 16px; display: none; }
+  .progress.active { display: block; }
+  .progress-track { height: 6px; background: var(--rule-line); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; width: 0%; background: var(--accent); transition: width .4s ease; }
+  .progress-label { margin-top: 8px; font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
+
+  .rules-toggle {
+    background: none; border: none; cursor: pointer;
+    font-size: 12.5px; color: var(--accent); text-decoration: underline dotted;
+    padding: 0;
+  }
+  #rules-list { margin-top: 12px; display: none; max-height: 320px; overflow-y: auto; border-top: 1px solid var(--rule-line); padding-top: 10px; }
+  #rules-list.open { display: block; }
+  #rules-list .rule { padding: 6px 0; border-bottom: 1px dotted var(--rule-line); font-size: 12.5px; }
+  #rules-list .rule b { font-family: var(--mono); font-size: 11px; }
+
+  /* ── Results ──────────────────────────────────────────── */
+  #results-empty {
+    border: 1.5px dashed var(--rule-line);
+    border-radius: 6px;
+    padding: 60px 30px;
+    text-align: center;
+    color: var(--ink-soft);
+    font-family: var(--serif);
+    font-size: 17px;
+    font-style: italic;
+  }
+  .downloads { display: none; gap: 10px; margin-bottom: 18px; }
+  .downloads.active { display: flex; flex-wrap: wrap; }
+  .downloads a {
+    font-size: 13px; font-weight: 600;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 7px 14px;
+    text-decoration: none;
+    background: var(--paper-raised);
+  }
+  .downloads a:hover { background: var(--expansive-bg); }
+
+  .bill-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule-line);
+    border-left: 4px solid var(--rule-line);
+    border-radius: 6px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 0 rgba(33,29,22,.05);
+    animation: rise .35s ease both;
+  }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } }
+  .bill-head {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 14px; flex-wrap: wrap;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--rule-line);
+  }
+  .bill-head h3 { font-family: var(--serif); font-size: 20px; font-weight: 600; }
+  .bill-head .src { font-size: 11.5px; font-family: var(--mono); color: var(--ink-soft); word-break: break-all; }
+  .impact-row { padding: 13px 18px; border-bottom: 1px solid var(--rule-line); }
+  .impact-row:last-child { border-bottom: none; }
+  .impact-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .chip {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 3px;
+  }
+  .chip.restrictive { color: var(--restrictive); background: var(--restrictive-bg); }
+  .chip.expansive { color: var(--expansive); background: var(--expansive-bg); }
+  .chip.election_interference { color: var(--interference); background: var(--interference-bg); }
+  .chip.neutral { color: var(--neutral); background: var(--neutral-bg); }
+  .chip.unprocessed { color: var(--error); background: #f4e0d8; }
+  .review-flag {
+    font-size: 11px; font-weight: 700; color: var(--error);
+    border: 1px solid var(--error); border-radius: 3px; padding: 3px 8px;
+  }
+  .areas { font-size: 13px; color: var(--ink-soft); }
+  .areas b { color: var(--ink); font-weight: 600; }
+  details.evidence { margin-top: 8px; }
+  details.evidence summary {
+    cursor: pointer; font-size: 12.5px; color: var(--accent); user-select: none;
+  }
+  .ev-item {
+    margin: 8px 0 0;
+    padding: 9px 12px;
+    background: #faf7ef;
+    border-left: 3px solid var(--rule-line);
+    font-size: 13px;
+  }
+  .ev-item .meta { font-family: var(--mono); font-size: 10.5px; color: var(--ink-soft); margin-bottom: 3px; }
+  .ev-item blockquote { font-family: var(--serif); font-style: italic; }
+  .bill-error { padding: 13px 18px; color: var(--error); font-size: 13.5px; }
+
+  footer {
+    padding: 26px clamp(20px, 5vw, 64px);
+    border-top: 1px solid var(--rule-line);
+    color: var(--ink-soft);
+    font-size: 12.5px;
+    max-width: 90ch;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kicker">Deterministic Provision-Level Coding</div>
+  <h1>Voting Legislation Impact&nbsp;Coder</h1>
+  <p class="sub">Paste a bill sheet below. Each bill's enacted text is fetched, split into
+  provisions, and coded against a transparent rule lexicon. Output is one record per
+  impact per bill — a bill can be both restrictive and expansive at once.</p>
+  <div class="catkey">
+    <span class="k-restrictive">Restrictive — harder to register, stay registered, or vote</span>
+    <span class="k-expansive">Expansive — easier to register, stay registered, or vote</span>
+    <span class="k-interference">Election interference — threatens people/processes or invites partisan interference</span>
+    <span class="k-neutral">Neutral — no provision reaches a threshold</span>
+  </div>
+</header>
+
+<main>
+  <section class="panel" aria-label="Input">
+    <div class="panel-head">
+      <h2>Bill sheet</h2>
+      <span class="hint">TSV or CSV</span>
+    </div>
+    <div class="panel-body">
+      <label class="small" for="sheet">bill_number &nbsp;·&nbsp; url &nbsp;·&nbsp; state_link</label>
+      <textarea id="sheet" spellcheck="false" placeholder="bill_number&#9;url&#9;state_link&#10;VA HB 967&#9;https://legiscan.com/VA/text/HB967/id/3423959&#9;https://lis.virginia.gov/bill-details/20261/HB967/text/CHAP0717"></textarea>
+      <div class="or-row">or upload a file</div>
+      <input type="file" id="file" accept=".tsv,.csv,.txt">
+      <button class="primary" id="run">Classify bills</button>
+
+      <div class="progress" id="progress">
+        <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+        <div class="progress-label" id="progress-label"></div>
+      </div>
+
+      <div style="margin-top:20px">
+        <button class="rules-toggle" id="rules-toggle">View the rule lexicon ▸</button>
+        <div id="rules-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-label="Results" id="results-col">
+    <div class="downloads" id="downloads">
+      <a id="dl-csv" href="#" download>Download impacts.csv</a>
+      <a id="dl-jsonl" href="#" download>Download evidence.jsonl</a>
+    </div>
+    <div id="results-empty">Coded results will appear here, one card per bill.</div>
+    <div id="results"></div>
+  </section>
+</main>
+
+<footer>
+  Deterministic by construction: the same bill text and the same rule lexicon always
+  produce the same coding. Every record carries the rule IDs and text excerpts that
+  triggered it, plus a SHA-256 of the classified text, so results are auditable and
+  reproducible. Records flagged <b>needs review</b> — and any policy-significant coding —
+  should be confirmed by a human coder; the lexicon is a screening instrument, not a
+  final judgment.
+</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const CAT_LABEL = {
+  restrictive: "Restrictive",
+  expansive: "Expansive",
+  election_interference: "Election interference",
+  neutral: "Neutral",
+  unprocessed: "Unprocessed",
+};
+
+let pollTimer = null;
+
+$("run").addEventListener("click", startJob);
+$("rules-toggle").addEventListener("click", toggleRules);
+
+async function startJob() {
+  const fileInput = $("file");
+  let resp;
+  $("run").disabled = true;
+  try {
+    if (fileInput.files.length) {
+      const fd = new FormData();
+      fd.append("file", fileInput.files[0]);
+      resp = await fetch("/api/jobs", { method: "POST", body: fd });
+    } else {
+      resp = await fetch("/api/jobs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sheet: $("sheet").value }),
+      });
+    }
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.error || "request failed");
+    $("results").innerHTML = "";
+    $("results-empty").style.display = "none";
+    $("downloads").classList.remove("active");
+    $("progress").classList.add("active");
+    poll(data.job_id);
+  } catch (e) {
+    alert("Could not start job: " + e.message);
+    $("run").disabled = false;
+  }
+}
+
+function poll(jobId) {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(async () => {
+    const resp = await fetch(`/api/jobs/${jobId}`);
+    if (!resp.ok) { clearInterval(pollTimer); $("run").disabled = false; return; }
+    const job = await resp.json();
+    const p = job.progress;
+    const pct = p.total ? Math.round((p.done / p.total) * 100) : 0;
+    $("progress-fill").style.width = pct + "%";
+    $("progress-label").textContent = job.state === "done"
+      ? `done — ${p.total} bill${p.total === 1 ? "" : "s"} coded`
+      : `${p.done}/${p.total} · fetching & coding ${p.current}`;
+    if (job.state === "done") {
+      clearInterval(pollTimer);
+      $("run").disabled = false;
+      render(job, jobId);
+    }
+  }, 700);
+}
+
+function render(job, jobId) {
+  $("dl-csv").href = `/api/jobs/${jobId}/impacts.csv`;
+  $("dl-jsonl").href = `/api/jobs/${jobId}/evidence.jsonl`;
+  $("downloads").classList.add("active");
+
+  const byBill = new Map();
+  for (const r of job.records) {
+    if (!byBill.has(r.bill_number)) byBill.set(r.bill_number, []);
+    byBill.get(r.bill_number).push(r);
+  }
+
+  const frag = document.createDocumentFragment();
+  let i = 0;
+  for (const [bill, records] of byBill) {
+    const card = document.createElement("article");
+    card.className = "bill-card";
+    card.style.animationDelay = `${Math.min(i * 60, 600)}ms`;
+    const cats = records.map((r) => r.category);
+    card.style.borderLeftColor =
+      cats.includes("election_interference") ? "var(--interference)" :
+      cats.includes("restrictive") ? "var(--restrictive)" :
+      cats.includes("expansive") ? "var(--expansive)" :
+      cats.includes("unprocessed") ? "var(--error)" : "var(--neutral)";
+
+    const src = records[0].source_used;
+    card.appendChild(el(`
+      <div class="bill-head">
+        <h3>${esc(bill)}</h3>
+        ${src ? `<span class="src">${esc(src)}</span>` : ""}
+      </div>`));
+
+    for (const r of records) {
+      if (r.status !== "ok") {
+        card.appendChild(el(`<div class="bill-error">Could not process this bill
+          (${esc(r.status)}). Check the source links, or retry — it is <i>not</i> coded neutral.</div>`));
+        continue;
+      }
+      const areas = r.policy_areas.length
+        ? `<span class="areas"><b>Policy areas:</b> ${r.policy_areas.map(esc).join(", ")}</span>` : "";
+      const flag = r.needs_review ? `<span class="review-flag">needs review</span>` : "";
+      const evidence = r.evidence.length ? `
+        <details class="evidence">
+          <summary>${r.evidence.length} matched provision excerpt${r.evidence.length === 1 ? "" : "s"} · rules: ${r.rule_ids.map(esc).join(", ")}</summary>
+          ${r.evidence.map((e) => `
+            <div class="ev-item">
+              <div class="meta">${esc(e.provision_id)} · ${esc(e.rule_id)}</div>
+              <blockquote>${esc(e.excerpt)}</blockquote>
+            </div>`).join("")}
+        </details>` : "";
+      card.appendChild(el(`
+        <div class="impact-row">
+          <div class="impact-top">
+            <span class="chip ${esc(r.category)}">${CAT_LABEL[r.category] || esc(r.category)}</span>
+            ${flag}
+            ${areas}
+          </div>
+          ${evidence}
+        </div>`));
+    }
+    frag.appendChild(card);
+    i++;
+  }
+  $("results").innerHTML = "";
+  $("results").appendChild(frag);
+}
+
+async function toggleRules() {
+  const list = $("rules-list");
+  const open = list.classList.toggle("open");
+  $("rules-toggle").textContent = open ? "Hide the rule lexicon ▾" : "View the rule lexicon ▸";
+  if (open && !list.childElementCount) {
+    const rules = await (await fetch("/api/rules")).json();
+    list.innerHTML = rules.map((r) => `
+      <div class="rule">
+        <b>${esc(r.id)}</b> — <span class="chip ${esc(r.category)}">${CAT_LABEL[r.category]}</span>
+        ${esc(r.description)} <i>(${esc(r.policy_area)})</i>
+      </div>`).join("");
+  }
+}
+
+function el(html) {
+  const t = document.createElement("template");
+  t.innerHTML = html.trim();
+  return t.content.firstChild;
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+</script>
+</body>
+</html>

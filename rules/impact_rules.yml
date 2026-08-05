@@ -1,0 +1,376 @@
+# Impact rule lexicon for voting legislation classification.
+#
+# Each rule maps text patterns to one impact category and one policy area.
+# Semantics per rule:
+#   any:  at least one pattern must match the provision   (required)
+#   all:  every pattern must also match                    (optional)
+#   none: rule is suppressed if any pattern matches        (optional)
+#
+# Patterns are case-insensitive regexes compiled with DOTALL, so `.{0,80}`
+# proximity windows can span line breaks. Keep windows tight: they run
+# against a single provision (section), not the whole bill.
+#
+# This is a SEED lexicon meant to be curated against coded ground truth.
+# Conventions:
+#   R-* restrictive, E-* expansive, I-* election interference
+#   Rule ids are stable; never reuse a retired id.
+
+# ---------------------------------------------------------------------------
+# RESTRICTIVE
+# ---------------------------------------------------------------------------
+
+- id: R-ID-001
+  category: restrictive
+  policy_area: voter_id
+  description: New or stricter photo/documentary ID requirement to vote
+  any:
+    - 'shall\s+(present|provide|show|produce)\s.{0,60}\bphoto(graphic)?\s+identification'
+    - 'photo(graphic)?\s+identification\s+(is\s+)?required'
+    - 'valid\s+photo(graphic)?\s+identification\s.{0,40}in\s+order\s+to\s+(vote|cast)'
+    - '(may|shall)\s+not\s+(vote|be\s+issued\s+a\s+ballot|cast\s+a\s+ballot)\s.{0,80}without\s.{0,40}identification'
+  none:
+    - '(add|expand|additional|include)\w*\s.{0,60}(acceptable|valid|permitted)\s.{0,30}identification'
+    - 'sign\s+a\s+statement\s.{0,60}in\s+lieu\s+of'
+
+- id: R-ID-002
+  category: restrictive
+  policy_area: voter_registration
+  description: Documentary proof of citizenship required to register
+  any:
+    - '(documentary\s+)?proof\s+of\s+(united\s+states\s+)?citizenship\s.{0,80}(register|registration)'
+    - '(register|registration)\s.{0,80}(documentary\s+)?proof\s+of\s+(united\s+states\s+)?citizenship'
+  none:
+    - '(repeal|eliminat|remov)\w*\s.{0,60}proof\s+of\s+citizenship'
+
+- id: R-REG-001
+  category: restrictive
+  policy_area: voter_registration
+  description: Repeal or narrowing of same-day/election-day registration
+  any:
+    - '(repeal|eliminat|discontinu|abolish)\w*\s.{0,80}(same|election).day\s+(voter\s+)?registration'
+    - '(same|election).day\s+(voter\s+)?registration\s.{0,80}(repealed|eliminated|discontinued|abolished|prohibited)'
+
+- id: R-REG-002
+  category: restrictive
+  policy_area: voter_registration
+  description: Earlier registration deadline / closes registration further from election day
+  any:
+    - 'registration\s.{0,60}clos\w+\s.{0,60}(thirty|forty|\d{2,})\s+days?\s+(before|prior\s+to)'
+    - '(deadline|last\s+day)\s+(to|for)\s+register\s.{0,60}(moved|advanced|earlier)'
+
+- id: R-REG-003
+  category: restrictive
+  policy_area: voter_registration
+  description: New penalties or restrictions on third-party voter registration drives
+  any:
+    - '(third.party|voter\s+registration\s+(drive|organization|agenc|group))\w*\s.{0,120}(fine|penalt|misdemeanor|felony|prohibit|unlawful)'
+    - '(fine|penalt|misdemeanor|felony|prohibit|unlawful)\w*\s.{0,120}(third.party\s+registration|voter\s+registration\s+(drive|organization))'
+
+- id: R-LIST-001
+  category: restrictive
+  policy_area: list_maintenance
+  description: Purge/cancellation of registration for inactivity or non-response
+  any:
+    - '(cancel|remove|purge|delete)\w*\s.{0,100}registration\s.{0,120}(fail\w*\s+to\s+(vote|respond)|inactiv|did\s+not\s+vote)'
+    - '(fail\w*\s+to\s+(vote|respond)|inactiv\w*)\s.{0,120}(cancel|remove|purge|delete)\w*\s.{0,60}(registration|from\s+the\s+(list|rolls?))'
+
+- id: R-LIST-002
+  category: restrictive
+  policy_area: list_maintenance
+  description: Mass challenges to voter eligibility made easier
+  any:
+    - '(any\s+(person|elector|voter)|registered\s+voter)\s.{0,80}may\s+challenge\s.{0,80}(qualification|eligibility|registration)\s+of'
+    - 'challenge\w*\s.{0,60}(unlimited|any\s+number)\s.{0,40}(voter|elector)'
+
+- id: R-ABS-001
+  category: restrictive
+  policy_area: absentee_mail_voting
+  description: Repeal or narrowing of no-excuse absentee/mail voting
+  any:
+    - '(repeal|eliminat|discontinu)\w*\s.{0,80}no.excuse\s+(absentee|mail)'
+    - '(excuse|reason)\s+(is\s+)?required\s.{0,80}(absentee|vote\s+by\s+mail|mail\s+ballot)'
+    - 'absentee\s+ballot\s.{0,80}only\s+if\s.{0,80}(unable|illness|disability|absence)'
+
+- id: R-ABS-002
+  category: restrictive
+  policy_area: absentee_mail_voting
+  description: New witness/notarization requirement for absentee ballots
+  any:
+    - '(absentee|mail)\s+ballot\s.{0,120}(shall|must)\s+be\s+(witnessed|notarized)'
+    - '(witness|notar)\w*\s.{0,60}(signature|statement)\s.{0,80}(absentee|mail)\s+ballot'
+  none:
+    - '(repeal|eliminat|remov|no\s+longer)\w*\s.{0,60}(witness|notar)'
+
+- id: R-ABS-003
+  category: restrictive
+  policy_area: absentee_mail_voting
+  description: Restricts who may apply for or be sent a mail ballot (e.g. bans unsolicited applications)
+  any:
+    - '(prohibit|shall\s+not|may\s+not|unlawful)\s.{0,100}(send|mail|distribut)\w*\s.{0,60}(unsolicited\s+)?(absentee\s+ballot|mail\s+ballot|ballot\s+application)'
+    - '(absentee|mail)\s+ballot\s+application\s.{0,80}only\s+(upon|on)\s+request'
+
+- id: R-ABS-004
+  category: restrictive
+  policy_area: absentee_mail_voting
+  description: Earlier absentee ballot request/return deadlines
+  any:
+    - '(application|request)\s+for\s+an?\s+(absentee|mail)\s+ballot\s.{0,80}(not\s+later|no\s+later)\s+than\s.{0,40}(day|days)\s+(before|prior)'
+    - '(absentee|mail)\s+ballots?\s.{0,80}received\s.{0,60}(by|before|no\s+later\s+than)\s.{0,40}(close\s+of\s+polls|election\s+day)'
+  none:
+    - 'postmark'  # counting postmarked-by-election-day ballots is the expansive direction
+
+- id: R-RET-001
+  category: restrictive
+  policy_area: ballot_return
+  description: Criminalizes or restricts ballot collection/return assistance
+  any:
+    - '(unlawful|prohibit|offense|felony|misdemeanor)\w*\s.{0,120}(collect|return|deliver|possess)\w*\s.{0,60}(another|other)(.s)?\s.{0,40}ballot'
+    - 'ballot\s+harvesting'
+    - '(only|no\s+person\s+other\s+than)\s.{0,80}(family\s+member|household|caregiver)\s.{0,80}(return|deliver)\s.{0,40}ballot'
+
+- id: R-RET-002
+  category: restrictive
+  policy_area: ballot_return
+  description: Limits or removes ballot drop boxes
+  any:
+    - '(prohibit|remov|eliminat|shall\s+not)\w*\s.{0,80}drop\s?box'
+    - 'no\s+more\s+than\s+(one|two|\d+)\s+drop\s?box'
+    - 'drop\s?box\w*\s.{0,80}(prohibited|unlawful|removed|limited\s+to\s+(one|two|\d+))'
+
+- id: R-EV-001
+  category: restrictive
+  policy_area: early_voting
+  description: Shortens the early/in-person absentee voting period or hours
+  any:
+    - '(reduc|shorten|decreas|limit)\w*\s.{0,80}(early\s+voting|in.person\s+absentee)\s.{0,40}(period|days|hours)'
+    - '(early\s+voting|in.person\s+absentee)\s.{0,60}(period|days|hours)\s.{0,60}(reduced|shortened|decreased)'
+    - '(repeal|eliminat)\w*\s.{0,60}(sunday|weekend|evening)\s+(early\s+)?voting'
+
+- id: R-POLL-001
+  category: restrictive
+  policy_area: polling_places
+  description: Closes or consolidates polling places / reduces voting sites
+  any:
+    - '(reduc|consolidat|clos|eliminat)\w*\s.{0,80}(polling\s+(place|location|site)|vote\s+center)'
+  none:
+    - '(prohibit|shall\s+not|may\s+not)\s.{0,60}(reduc|consolidat|clos|eliminat)'  # bans on closures are protective
+
+- id: R-ASSIST-001
+  category: restrictive
+  policy_area: voter_assistance
+  description: Restricts assistance to voters (including line warming / food and water bans)
+  any:
+    - '(unlawful|prohibit|offense|misdemeanor|felony)\w*\s.{0,120}(assist)\w*\s.{0,60}(voter|elector|casting)'
+    - '(unlawful|prohibit|offense)\w*\s.{0,100}(food|water|refreshment)\s.{0,80}(line|waiting\s+to\s+vote|voter)'
+
+- id: R-FEL-001
+  category: restrictive
+  policy_area: felony_disenfranchisement
+  description: Expands felony disenfranchisement or adds conditions to rights restoration
+  any:
+    - '(shall\s+not|may\s+not|ineligible\s+to)\s+(register|vote)\s.{0,100}(felony|conviction)'
+    - '(restoration\s+of\s+(voting\s+)?rights?)\s.{0,120}(payment|paid\s+in\s+full|fines?,?\s+fees|restitution|court\s+costs)'
+  none:
+    - '(restor|re.enfranchis)\w*\s.{0,60}(upon|after)\s+(release|completion\s+of\s+(the\s+)?term\s+of\s+incarceration)'
+
+# ---------------------------------------------------------------------------
+# EXPANSIVE
+# ---------------------------------------------------------------------------
+
+- id: E-REG-001
+  category: expansive
+  policy_area: voter_registration
+  description: Automatic voter registration
+  any:
+    - 'automatic(ally)?\s+(voter\s+)?regist\w+'
+    - 'automatically\s+registered\s+to\s+vote'
+
+- id: E-REG-002
+  category: expansive
+  policy_area: voter_registration
+  description: Same-day / election-day registration
+  any:
+    - 'same.day\s+(voter\s+)?registration'
+    - 'register\s.{0,40}(and\s+vote\s+)?on\s+(the\s+day\s+of\s+the\s+)?election\s+day'
+    - 'election.day\s+(voter\s+)?registration'
+  none:
+    - '(repeal|eliminat|discontinu|abolish|prohibit)'
+
+- id: E-REG-003
+  category: expansive
+  policy_area: voter_registration
+  description: Online voter registration created or expanded
+  any:
+    - '(establish|creat|provid|implement)\w*\s.{0,80}(online|electronic|internet)\s+(voter\s+)?registration'
+    - '(online|electronic)\s+(voter\s+)?registration\s+(system|portal)'
+  none:
+    - '(repeal|eliminat|discontinu|prohibit)'
+
+- id: E-REG-004
+  category: expansive
+  policy_area: youth_voting
+  description: Pre-registration of 16/17-year-olds
+  any:
+    - 'preregist\w+'
+    - 'pre.regist\w+\s.{0,60}(16|17|sixteen|seventeen)'
+    - '(16|sixteen|17|seventeen)\s+years?\s+of\s+age\s.{0,60}(preregister|pre.register|register\s+to\s+vote)'
+
+- id: E-FEL-001
+  category: expansive
+  policy_area: felony_disenfranchisement
+  description: Restores voting rights to people with felony convictions
+  any:
+    - '(restor|re.enfranchis)\w*\s.{0,80}(right\s+to\s+vote|voting\s+rights?|right\s+to\s+register)'
+    - '(right\s+to\s+vote|voting\s+rights?)\s.{0,60}restored\s.{0,80}(release|completion|discharge)'
+  none:
+    - '(payment|paid\s+in\s+full)\s.{0,40}(fines?|fees|restitution)'  # pay-to-vote conditions -> R-FEL-001
+
+- id: E-ABS-001
+  category: expansive
+  policy_area: absentee_mail_voting
+  description: No-excuse absentee/mail voting created or expanded
+  any:
+    - 'no.excuse\s+(absentee|mail)'
+    - '(any\s+(qualified|registered)\s+(voter|elector))\s.{0,80}may\s+vote\s.{0,40}(absentee|by\s+mail)'
+    - '(absentee|mail)\s+ballot\s.{0,80}without\s.{0,40}(excuse|stating\s+a\s+reason|providing\s+a\s+reason)'
+
+- id: E-ABS-002
+  category: expansive
+  policy_area: absentee_mail_voting
+  description: Permanent absentee/mail ballot list
+  any:
+    - 'permanent\s+(absentee|mail)\s+(voter\s+)?(ballot\s+)?(list|status)'
+    - '(single|one.time)\s+application\s.{0,80}(all\s+subsequent|each|every)\s+election'
+
+- id: E-ABS-003
+  category: expansive
+  policy_area: absentee_mail_voting
+  description: Ballot cure process for signature/technical defects
+  any:
+    - '(cure|correct|remedy)\s.{0,80}(signature|defect|deficien|omission)\s.{0,80}(absentee|mail|ballot)'
+    - '(notify|notif\w+)\s.{0,60}voter\s.{0,80}opportunity\s+to\s+(cure|correct)'
+
+- id: E-ABS-004
+  category: expansive
+  policy_area: absentee_mail_voting
+  description: Ballot tracking, prepaid postage, or postmark-deadline counting
+  any:
+    - 'track\w*\s.{0,60}(absentee|mail)\s.{0,20}ballot'
+    - '(prepaid|pre.paid|postage.paid)\s.{0,40}(postage|envelope|return)'
+    - 'postmarked\s.{0,60}(on\s+or\s+before|by)\s.{0,40}election'
+
+- id: E-RET-001
+  category: expansive
+  policy_area: ballot_return
+  description: Establishes or expands ballot drop boxes
+  any:
+    - '(establish|provid|install|place|increas|expand)\w*\s.{0,80}drop\s?box'
+    - 'at\s+least\s+(one|two|\d+)\s+drop\s?box'
+  none:
+    - '(prohibit|remov|eliminat|shall\s+not|no\s+more\s+than)'
+
+- id: E-EV-001
+  category: expansive
+  policy_area: early_voting
+  description: Creates or extends early voting (period, hours, weekend days)
+  any:
+    - '(establish|creat|extend|expand|increas|lengthen)\w*\s.{0,80}(early\s+voting|in.person\s+absentee)'
+    - '(early\s+voting|in.person\s+absentee)\s.{0,60}(period|days|hours)\s.{0,60}(extended|expanded|increased)'
+    - '(sunday|weekend|saturday)\s+(early\s+)?voting\s.{0,60}(permitted|allowed|required|shall\s+be)'
+  none:
+    - '(reduc|shorten|decreas|repeal|eliminat)'
+
+- id: E-ID-001
+  category: expansive
+  policy_area: voter_id
+  description: Expands acceptable ID list or adds non-documentary alternatives
+  any:
+    - '(add|expand|additional|include)\w*\s.{0,80}(forms?\s+of|types?\s+of|acceptable|valid)\s.{0,40}identification'
+    - '(affidavit|sworn\s+statement|sign\s+a\s+statement)\s.{0,80}in\s+lieu\s+of\s.{0,40}identification'
+
+- id: E-POLL-001
+  category: expansive
+  policy_area: polling_places
+  description: Expands polling access (more sites, longer hours, curbside/accessible voting)
+  any:
+    - '(additional|increas|expand)\w*\s.{0,60}(polling\s+(place|location|site)|vote\s+center)'
+    - 'curbside\s+voting'
+    - '(extend|lengthen)\w*\s.{0,60}(polling|voting)\s+hours'
+
+- id: E-LANG-001
+  category: expansive
+  policy_area: language_access
+  description: Language access / translated voting materials
+  any:
+    - '(ballot|voting\s+material|election\s+material)\w*\s.{0,80}(language\s+other\s+than\s+english|translat)'
+    - 'language\s+(access|assistance)\s.{0,60}(voter|election|ballot)'
+
+- id: E-LIST-001
+  category: expansive
+  policy_area: list_maintenance
+  description: Protections against wrongful removal from the rolls
+  any:
+    - '(shall|must)\s+not\s+be\s+(removed|cancell?ed|purged)\s.{0,80}(solely|only)\s.{0,60}(fail\w*\s+to\s+vote|inactiv)'
+    - '(notice|notif\w+)\s.{0,80}(before|prior\s+to)\s.{0,60}(removal|cancellation)\s.{0,40}(registration|rolls?)'
+
+# ---------------------------------------------------------------------------
+# ELECTION INTERFERENCE
+# ---------------------------------------------------------------------------
+
+- id: I-ADMIN-001
+  category: election_interference
+  policy_area: election_administration
+  description: New criminal penalties on election officials for routine administration
+  any:
+    - '(election\s+official|registrar|election\s+(officer|administrator)|member\s+of\s+the\s.{0,30}board\s+of\s+elections?)\s.{0,140}(guilty\s+of\s+a\s+)?(felony|misdemeanor|criminal\s+penalt|imprison)'
+    - '(felony|misdemeanor)\s.{0,100}(for\s+an?\s+)?(election\s+official|registrar)\s+(to|who)'
+  none:
+    - '(threat|harass|intimidat|interfer)\w*\s.{0,80}(election\s+official|election\s+worker|registrar)'  # penalties protecting officials are not interference
+
+- id: I-ADMIN-002
+  category: election_interference
+  policy_area: election_administration
+  description: Partisan takeover or removal of election officials/boards
+  any:
+    - '(legislature|general\s+assembly|secretary\s+of\s+state|state\s+board)\s.{0,100}(remove|replace|suspend)\s.{0,80}(county|local)\s.{0,60}(election\s+(official|board|superintendent)|registrar)'
+    - '(take\s*over|assume\s+(control|the\s+duties)|supersede)\s.{0,80}(county|local)\s.{0,60}(election|board\s+of\s+elections?)'
+    - '(abolish|reconstitut|restructur)\w*\s.{0,80}(state|county)\s+(election\s+board|board\s+of\s+elections?)'
+
+- id: I-CERT-001
+  category: election_interference
+  policy_area: certification
+  description: Enables partisan actors to delay, refuse, or override certification of results
+  any:
+    - '(refus|declin|delay|withhold)\w*\s.{0,80}certif\w*\s.{0,60}(result|election|returns)'
+    - '(legislature|general\s+assembly)\s.{0,100}(set\s+aside|overturn|reject|revise)\s.{0,60}(result|electors|returns)'
+    - 'certif\w*\s+of\s.{0,40}(result|election)\s.{0,80}(discretion|may\s+decline)'
+
+- id: I-AUDIT-001
+  category: election_interference
+  policy_area: audits
+  description: Partisan/outsourced "audits" or seizure of election materials
+  any:
+    - 'forensic\s+audit'
+    - '(audit|review|recount)\s.{0,100}(private\s+(entity|contractor|party)|third.party\s+(entity|contractor))'
+    - '(seiz|impound|take\s+custody\s+of)\w*\s.{0,80}(ballots?|voting\s+(machines?|equipment)|election\s+materials?)'
+  none:
+    - 'risk.limiting\s+audit'  # RLAs are standard practice, not interference
+
+- id: I-WATCH-001
+  category: election_interference
+  policy_area: poll_watchers
+  description: Unfettered partisan poll watcher access / limits on removing disruptive watchers
+  any:
+    - '(poll\s+watcher|election\s+observer)\w*\s.{0,120}(shall\s+not\s+be\s+(restricted|limited|denied)|free\s+(movement|access)|any\s+(location|area|distance))'
+    - '(unlawful|offense|penalt)\w*\s.{0,100}(obstruct|deny|restrict)\w*\s.{0,60}(poll\s+watcher|observer)'
+  none:
+    - '(poll\s+watcher|observer)\w*\s.{0,80}(shall|must)\s+not\s.{0,60}(interfer|intimidat|harass)'
+
+- id: I-THREAT-001
+  category: election_interference
+  policy_area: election_administration
+  description: Enables partisan-motivated prosecution of election crimes / special election police
+  any:
+    - '(election\s+(integrity|crimes?)\s+(unit|force|police|task\s+force))'
+    - '(special\s+(prosecutor|counsel))\s.{0,80}election'
+    - '(attorney\s+general|state\s+police)\s.{0,80}(investigat|prosecut)\w*\s.{0,60}election\s+(crimes?|fraud|offenses?)'
