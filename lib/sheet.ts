@@ -8,7 +8,7 @@
 import type { BillInput } from "./types";
 
 export function parseSheet(text: string): BillInput[] {
-  const clean = text.replace(/^﻿/, "").replace(/\r\n?/g, "\n").trim();
+  const clean = text.replace(/^\uFEFF/, "").replace(/\r\n?/g, "\n").trim();
   if (!clean) throw new Error("input is empty");
   const lines = clean.split("\n");
   const delimiter = lines[0].includes("\t") ? "\t" : ",";

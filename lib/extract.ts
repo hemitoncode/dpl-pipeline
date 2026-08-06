@@ -87,7 +87,7 @@ function walk(node: AnyNode, parts: string[]): void {
 /** Collapse whitespace while keeping line structure for segmentation. */
 export function normalize(text: string): string {
   let t = text.replace(/\r\n?/g, "\n");
-  t = t.replace(/[ \t ]+/g, " ");
+  t = t.replace(/[ \t\u00a0]+/g, " ");
   t = t
     .split("\n")
     .map((line) => line.trim())
