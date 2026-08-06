@@ -7,7 +7,7 @@
  * builds impacts.csv / evidence.jsonl downloads locally.
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { makeCsv, makeJsonl } from "@/lib/output";
 import { parseSheet } from "@/lib/sheet";
@@ -45,7 +45,17 @@ export default function Page() {
   const [records, setRecords] = useState<ImpactRecord[]>([]);
   const [rules, setRules] = useState<RuleInfo[] | null>(null);
   const [rulesOpen, setRulesOpen] = useState(false);
+  const [apiKey, setApiKey] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setApiKey(localStorage.getItem("legiscan_api_key") ?? "");
+  }, []);
+
+  const updateApiKey = useCallback((value: string) => {
+    setApiKey(value);
+    localStorage.setItem("legiscan_api_key", value);
+  }, []);
 
   const run = useCallback(async () => {
     let text = sheet;
@@ -76,7 +86,7 @@ export default function Page() {
         const resp = await fetch("/api/classify", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(bill),
+          body: JSON.stringify({ ...bill, legiscan_api_key: apiKey.trim() || undefined }),
         });
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.error ?? `HTTP ${resp.status}`);
@@ -171,6 +181,25 @@ export default function Page() {
             />
             <div className="or-row">or upload a file</div>
             <input type="file" ref={fileRef} accept=".tsv,.csv,.txt" />
+            <div className="key-row">
+              <label className="small" htmlFor="apikey">
+                LegiScan API key — optional, recommended
+              </label>
+              <input
+                id="apikey"
+                type="password"
+                className="key-input"
+                placeholder="free at legiscan.com/legiscan"
+                value={apiKey}
+                onChange={(e) => updateApiKey(e.target.value)}
+                autoComplete="off"
+              />
+              <p className="key-note">
+                With a key, bills are fetched through LegiScan&rsquo;s API — the reliable path
+                when a state site is a JS app, a scanned PDF, or blocks automated traffic.
+                Stored only in your browser.
+              </p>
+            </div>
             <button className="primary" onClick={run} disabled={running}>
               {running ? "Coding…" : "Classify bills"}
             </button>

@@ -28,8 +28,12 @@ const RETRIES = 3;
 
 const cache = new Map<string, { bytes: Uint8Array; contentType: string }>();
 
-export async function fetchDoc(url: string): Promise<FetchedDoc> {
-  if (url.startsWith("legiscan-api://")) return fetchLegiScanApi(url);
+export interface FetchOptions {
+  legiscanApiKey?: string;
+}
+
+export async function fetchDoc(url: string, opts?: FetchOptions): Promise<FetchedDoc> {
+  if (url.startsWith("legiscan-api://")) return fetchLegiScanApi(url, opts);
   if (!/^https?:\/\//i.test(url)) {
     throw new FetchError(`unsupported URL scheme (need http/https): ${url}`);
   }
@@ -68,12 +72,12 @@ export async function fetchDoc(url: string): Promise<FetchedDoc> {
  * scraping the viewer page. `url` is our internal "legiscan-api://<docId>"
  * marker produced by sourceCandidates(); requires LEGISCAN_API_KEY.
  */
-async function fetchLegiScanApi(url: string): Promise<FetchedDoc> {
+async function fetchLegiScanApi(url: string, opts?: FetchOptions): Promise<FetchedDoc> {
   const hit = cache.get(url);
   if (hit) return { url, bytes: hit.bytes, contentType: hit.contentType, fromCache: true };
 
   const docId = url.slice("legiscan-api://".length);
-  const key = process.env.LEGISCAN_API_KEY;
+  const key = opts?.legiscanApiKey || process.env.LEGISCAN_API_KEY;
   if (!key) throw new FetchError("LEGISCAN_API_KEY is not set");
   const apiUrl = `https://api.legiscan.com/?key=${encodeURIComponent(key)}&op=getBillText&id=${encodeURIComponent(docId)}`;
   const resp = await fetch(apiUrl, {

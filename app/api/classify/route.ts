@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 export async function POST(request: Request) {
-  let body: Partial<BillInput>;
+  let body: Partial<BillInput> & { legiscan_api_key?: string };
   try {
     body = await request.json();
   } catch {
@@ -39,6 +39,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "at least one of url / state_link is required" }, { status: 400 });
   }
 
-  const result = await processBill(bill, loadRules());
+  const result = await processBill(bill, loadRules(), {
+    legiscanApiKey: (body.legiscan_api_key ?? "").trim() || undefined,
+  });
   return NextResponse.json({ records: aggregate(result), error: result.error });
 }

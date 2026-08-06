@@ -49,13 +49,17 @@ no text. A sample sheet is at `examples/input.tsv`.
 Source candidates are tried in order until one yields real text:
 
 1. `state_link`
-2. known plain-text mirrors of viewer-shell hosts (e.g. Virginia's new LIS is
-   a JS app with no server-rendered text; its legacy CGI serves the same
-   chaptered act as plain HTML)
-3. the LegiScan **API** (`op=getBillText`) when the `LEGISCAN_API_KEY`
-   environment variable is set — strongly recommended: a free key from
-   legiscan.com makes every bill fetchable even when its state site is a
-   JS shell, a scanned PDF, or blocks server traffic
+2. known plain-text equivalents of viewer-shell hosts — e.g. Virginia's new
+   LIS is a JS app with no server-rendered text, so for chaptered acts the
+   pipeline also tries the Virginia Law Portal
+   (`law.lis.virginia.gov/uncodifiedacts/{year}/session{n}/chapter{n}/`) and
+   the legacy LIS CGI
+3. the LegiScan **API** (`op=getBillText`) when a key is available — strongly
+   recommended: a free key from legiscan.com makes every bill fetchable even
+   when its state site is a JS shell, a scanned PDF, or blocks server
+   traffic. Provide it either in the **UI field** (stored in your browser's
+   localStorage, sent per request) or as the `LEGISCAN_API_KEY` environment
+   variable on the server
 4. the LegiScan `url` page itself
 
 When every candidate fails, the bill is coded `unprocessed` and the exact

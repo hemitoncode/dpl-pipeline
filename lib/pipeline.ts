@@ -25,40 +25,60 @@ import type { BillInput, BillResult } from "./types";
  *   LEGISCAN_API_KEY is set we pull the document itself via LegiScan's API
  *   (the sanctioned, reliable route).
  */
-export function sourceCandidates(bill: BillInput): string[] {
+export interface PipelineOptions {
+  /** LegiScan API key; falls back to the LEGISCAN_API_KEY env var. */
+  legiscanApiKey?: string;
+}
+
+export function sourceCandidates(bill: BillInput, opts?: PipelineOptions): string[] {
+  const key = opts?.legiscanApiKey || process.env.LEGISCAN_API_KEY;
   const out: string[] = [];
   const push = (u: string) => {
     if (u && !out.includes(u)) out.push(u);
   };
 
-  // 1. State legislature text, then its plain-HTML mirror where we know one.
+  // 1. State legislature text, then plain-HTML equivalents where we know one.
   push(bill.state_link);
   const va = bill.state_link.match(
     /^https?:\/\/lis\.virginia\.gov\/bill-details\/(\d{5})\/\w+\/text\/(\w+)/i,
   );
   if (va) {
-    // Session "20261" → legacy session code "261".
-    push(`https://legacylis.virginia.gov/cgi-bin/legp604.exe?${va[1].slice(2)}+ful+${va[2]}`);
+    const [, session, doc] = va;
+    // Chaptered acts (CHAPnnnn) are published server-rendered on Virginia's
+    // Law Portal: /uncodifiedacts/{year}/session{n}/chapter{n}/.
+    const chap = doc.match(/^CHAP0*(\d+)$/i);
+    if (chap) {
+      push(
+        `https://law.lis.virginia.gov/uncodifiedacts/${session.slice(0, 4)}/session${session.slice(4)}/chapter${chap[1]}/`,
+      );
+    }
+    // Legacy CGI mirror (sessions before the 2025 LIS rewrite; harmless 404
+    // otherwise). Session "20261" → legacy session code "261".
+    push(`https://legacylis.virginia.gov/cgi-bin/legp604.exe?${session.slice(2)}+ful+${doc}`);
   }
 
   // 2. LegiScan: prefer the API (reliable, sanctioned) over scraping the
-  //    viewer page, whenever a key is configured.
+  //    viewer page, whenever a key is available.
   const ls = bill.url.match(/^https?:\/\/legiscan\.com\/\w+\/text\/[\w.]+\/id\/(\d+)/i);
-  if (ls && process.env.LEGISCAN_API_KEY) push(`legiscan-api://${ls[1]}`);
+  if (ls && key) push(`legiscan-api://${ls[1]}`);
   push(bill.url);
 
   return out;
 }
 
-export async function processBill(bill: BillInput, rules: Rule[]): Promise<BillResult> {
+export async function processBill(
+  bill: BillInput,
+  rules: Rule[],
+  opts?: PipelineOptions,
+): Promise<BillResult> {
   const errors: string[] = [];
   let anyFetched = false;
   let lastFetchedUrl = "";
 
-  for (const url of sourceCandidates(bill)) {
+  for (const url of sourceCandidates(bill, opts)) {
     let doc;
     try {
-      doc = await fetchDoc(url);
+      doc = await fetchDoc(url, opts);
     } catch (e) {
       if (!(e instanceof FetchError)) throw e;
       errors.push(e.message);
@@ -88,6 +108,12 @@ export async function processBill(bill: BillInput, rules: Rule[]): Promise<BillR
     };
   }
 
+  const hasKey = Boolean(opts?.legiscanApiKey || process.env.LEGISCAN_API_KEY);
+  if (!hasKey && errors.some((e) => e.includes("legiscan.com"))) {
+    errors.push(
+      "hint: add a LegiScan API key (free at legiscan.com) so bills can be fetched via the API instead of the blocked/shell pages",
+    );
+  }
   return {
     bill,
     status: anyFetched ? "extract_error" : "fetch_error",

@@ -108,14 +108,15 @@ describe("sourceCandidates", () => {
     state_link: "https://lis.virginia.gov/bill-details/20261/HB967/text/CHAP0717",
   };
 
-  it("adds the VA legacy plain-HTML mirror after the SPA link", () => {
+  it("derives VA law-portal and legacy mirrors after the SPA link", () => {
     const candidates = sourceCandidates(vaBill);
     expect(candidates[0]).toBe(vaBill.state_link);
-    expect(candidates[1]).toBe("https://legacylis.virginia.gov/cgi-bin/legp604.exe?261+ful+CHAP0717");
+    expect(candidates[1]).toBe("https://law.lis.virginia.gov/uncodifiedacts/2026/session1/chapter717/");
+    expect(candidates[2]).toBe("https://legacylis.virginia.gov/cgi-bin/legp604.exe?261+ful+CHAP0717");
     expect(candidates).toContain(vaBill.url);
   });
 
-  it("prefers the LegiScan API over the viewer page when a key is set", () => {
+  it("prefers the LegiScan API over the viewer page when a key is set via env", () => {
     process.env.LEGISCAN_API_KEY = "test-key";
     try {
       const candidates = sourceCandidates(vaBill);
@@ -125,6 +126,22 @@ describe("sourceCandidates", () => {
     } finally {
       delete process.env.LEGISCAN_API_KEY;
     }
+  });
+
+  it("accepts a per-request LegiScan key without any env var", () => {
+    const candidates = sourceCandidates(vaBill, { legiscanApiKey: "user-key" });
+    expect(candidates).toContain("legiscan-api://3423959");
+  });
+
+  it("skips the law-portal mirror for non-chaptered documents", () => {
+    const candidates = sourceCandidates({
+      ...vaBill,
+      state_link: "https://lis.virginia.gov/bill-details/20261/HB967/text/HB967ER",
+    });
+    expect(candidates.some((c) => c.includes("law.lis.virginia.gov"))).toBe(false);
+    expect(candidates).toContain(
+      "https://legacylis.virginia.gov/cgi-bin/legp604.exe?261+ful+HB967ER",
+    );
   });
 
   it("skips empty inputs and dedupes", () => {
