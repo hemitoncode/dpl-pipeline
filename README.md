@@ -1,7 +1,7 @@
 # dpl-pipeline — Voting Legislation Impact Coder
 
-A deterministic pipeline that codes voting legislation at the **Impact / Bill**
-level, with a web frontend for end users.
+A Next.js app that deterministically codes voting legislation at the
+**Impact / Bill** level.
 
 Each bill is fetched, split into provisions, and scored against a transparent
 rule lexicon. The output is one record per impact category per bill — so a bill
@@ -21,17 +21,16 @@ a `restrictive` and an `expansive` record.
 ## Quickstart
 
 ```bash
-pip install -e .
-
-# Web frontend (the primary interface for end users)
-dpl-pipeline serve --port 8000
-# open http://127.0.0.1:8000 — paste or upload the bill sheet, watch progress,
-# review evidence, download impacts.csv / evidence.jsonl
-
-# Headless / automation
-dpl-pipeline run examples/input.tsv --out output/ --cache .cache/
-dpl-pipeline check-rules
+npm install
+npm run dev        # http://localhost:3000
+# production:
+npm run build && npm start
+# tests:
+npm test           # 31 Vitest tests: lexicon regression, pipeline, parsing
 ```
+
+Open the app, paste or upload the bill sheet, watch per-bill progress, review
+evidence excerpts, and download `impacts.csv` / `evidence.jsonl`.
 
 ### Input format
 
@@ -43,9 +42,9 @@ VA HB 967	https://legiscan.com/VA/text/HB967/id/3423959	https://lis.virginia.gov
 ```
 
 `state_link` (the state legislature's own text, usually the enrolled/chaptered
-version) is fetched first; the LegiScan `url` is the fallback, including when
+version) is fetched first; the LegiScan `url` is the fallback — including when
 the state link turns out to be a JS viewer shell or a scanned PDF that yields
-no text.
+no text. A sample sheet is at `examples/input.tsv`.
 
 ### Output
 
@@ -55,42 +54,53 @@ no text.
 - **`evidence.jsonl`** — the same records with full evidence detail: for every
   match, the provision id, rule id, and the text excerpt that triggered it.
 
-## Pipeline architecture
+Both are assembled client-side from the API responses, so nothing is stored on
+the server.
+
+## Architecture
 
 ```
-input sheet ─▶ fetch (state_link ▸ legiscan, disk-cached)
-           ─▶ extract text  (HTML: stricken <s>/<del> language removed; PDF via pypdf)
-           ─▶ segment into provisions (statutory section markers, chunk fallback)
-           ─▶ rule engine   (rules/impact_rules.yml, regex lexicon per provision)
-           ─▶ aggregate     (provision matches → Impact/Bill records)
-           ─▶ impacts.csv + evidence.jsonl / web UI
+app/
+  page.tsx              UI: sheet input, progress, bill cards, downloads
+  api/classify/route.ts POST one bill → Impact/Bill records (server-side)
+  api/rules/route.ts    GET rule lexicon summary (transparency view)
+lib/
+  fetchDoc.ts   fetch with retries + per-process cache (state_link ▸ legiscan)
+  extract.ts    HTML (stricken <s>/<del> language removed) / PDF via unpdf
+  segment.ts    statutory section markers → provisions (chunk fallback)
+  rules.ts      YAML lexicon loading/validation/compilation
+  classify.ts   rule engine: every rule × every provision, evidence excerpts
+  aggregate.ts  provision matches → one record per impact per bill
+  output.ts     deterministic impacts.csv / evidence.jsonl builders
+  sheet.ts      TSV/CSV input parsing
+rules/impact_rules.yml  the rule lexicon (the substantive heart of the system)
+tests/                  Vitest: lexicon regression snippets, pipeline, parsing
 ```
 
-Modules map 1:1 to stages: `fetch.py`, `extract.py`, `segment.py`,
-`rules.py` + `classify.py`, `aggregate.py`, `output.py`; `pipeline.py`
-orchestrates, `webapp.py` is the Flask frontend, `cli.py` the console entry.
+The client submits bills to `/api/classify` one at a time — progress is
+visible, and one slow state website can't stall the whole batch.
 
 ## Determinism
 
 - No models, no sampling: classification is pure regex over normalized text,
   rules evaluated in sorted-id order, provisions in document order.
-- Same text + same lexicon → byte-identical `impacts.csv` and
-  `evidence.jsonl` (covered by tests).
+- Same text + same lexicon → identical records and byte-identical CSV/JSONL
+  (covered by tests).
 - Every record carries `text_sha256` (hash of the exact text that was
   classified) and the triggering `rule_ids`, so any row can be re-derived and
   audited later.
-- Fetches are cached on disk by URL hash; `--offline` reruns classify from the
-  cache only, so a coding run can be frozen and reproduced exactly even if a
-  state website changes.
+- Fetches are cached in-memory per server process; for a frozen archival run,
+  keep the fetched documents alongside the output — `text_sha256` verifies a
+  re-fetch still matches the original coding.
 
 ## The rule lexicon
 
-`rules/impact_rules.yml` is the substantive heart of the system: ~35 seed
-rules, each mapping patterns to one category and one policy area
-(`voter_id`, `voter_registration`, `list_maintenance`, `absentee_mail_voting`,
-`early_voting`, `ballot_return`, `polling_places`, `voter_assistance`,
-`felony_disenfranchisement`, `election_administration`, `certification`,
-`audits`, `poll_watchers`, `language_access`, `youth_voting`, …).
+`rules/impact_rules.yml` holds ~38 seed rules, each mapping patterns to one
+category and one policy area (`voter_id`, `voter_registration`,
+`list_maintenance`, `absentee_mail_voting`, `early_voting`, `ballot_return`,
+`polling_places`, `voter_assistance`, `felony_disenfranchisement`,
+`election_administration`, `certification`, `audits`, `poll_watchers`,
+`language_access`, `youth_voting`, …).
 
 Rule semantics: `any` (≥1 must match) + optional `all` (all must match) +
 optional `none` (suppressors). Directionality is encoded in the patterns —
@@ -100,7 +110,7 @@ for routine administration* are interference (`I-ADMIN-001`) while penalties
 for *threatening* officials are suppressed by a `none` guard.
 
 To extend: add a rule with a fresh stable id, then add a canonical-language
-snippet test in `tests/test_rules.py`. The test suite is the lexicon's
+snippet test in `tests/rules.test.ts`. The test suite is the lexicon's
 regression harness.
 
 ## Review workflow (read this before trusting the numbers)
@@ -119,16 +129,10 @@ Known limitations:
 
 - **"Compared to existing state law"** requires baseline context a text-only
   system doesn't have. Stricken-text removal in HTML captures amendments'
-  direction partially; flat PDFs don't mark deletions at all. Rules are
-  written to key on directional language (*repeal, establish, no more than,
-  at least*), but genuinely ambiguous provisions need a human.
+  direction partially; flat PDFs don't mark deletions at all. Rules key on
+  directional language (*repeal, establish, no more than, at least*), but
+  genuinely ambiguous provisions need a human.
 - Scanned/image PDFs yield no text and come out `unprocessed` (an OCR stage
-  could be added in `extract.py`).
-- Resolutions, studies, and appropriations mostly (correctly) code neutral.
-
-## Development
-
-```bash
-pip install -e ".[dev]"
-python -m pytest        # 33 tests: lexicon regression, pipeline, web API
-```
+  could be added in `lib/extract.ts`).
+- Bill fetching happens server-side, so the deployment environment needs
+  outbound access to LegiScan and state legislature sites.

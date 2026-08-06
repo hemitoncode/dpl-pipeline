@@ -1,9 +1,7 @@
-__pycache__/
-*.pyc
-*.egg-info/
-.cache/
-output/
-webdata/
-.pytest_cache/
-build/
-dist/
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+npm-debug.log*
+.DS_Store
