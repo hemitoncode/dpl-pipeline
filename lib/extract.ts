@@ -80,6 +80,7 @@ function walk(node: AnyNode, parts: string[]): void {
     }
     for (const child of el.children ?? []) walk(child, parts);
     if (BLOCK.has(name)) parts.push("\n");
+    else if (name === "td" || name === "th") parts.push(" "); // keep table cells from merging into one word
   }
 }
 

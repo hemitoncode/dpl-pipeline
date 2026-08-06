@@ -173,6 +173,32 @@
   none:
     - '(restor|re.enfranchis)\w*\s.{0,60}(upon|after)\s+(release|completion\s+of\s+(the\s+)?term\s+of\s+incarceration)'
 
+- id: R-REG-004
+  category: restrictive
+  policy_area: voter_registration
+  description: Repeal or narrowing of registration conveniences (AVR, online registration, preregistration)
+  any:
+    - '(repeal|eliminat|discontinu|abolish|prohibit)\w*\s.{0,80}(automatic\s+(voter\s+)?registration|online\s+(voter\s+)?registration|preregist)'
+    - '(automatic|online)\s+(voter\s+)?registration\s.{0,120}(repealed|eliminated|discontinued|abolished|prohibited)'
+    - 'preregist\w+\s.{0,120}(repealed|eliminated|discontinued|abolished|prohibited)'
+
+- id: R-POLL-002
+  category: restrictive
+  policy_area: polling_places
+  description: Prohibits or eliminates curbside/accessible voting options
+  any:
+    - '(prohibit|eliminat|repeal|unlawful)\w*\s.{0,80}curbside'
+    - 'curbside\s+voting\s.{0,80}(prohibited|unlawful|repealed|eliminated)'
+
+- id: R-ABS-005
+  category: restrictive
+  policy_area: absentee_mail_voting
+  description: Eliminates or narrows ballot cure opportunities
+  any:
+    - '(repeal|eliminat|remov|abolish)\w*\s.{0,100}(opportunity\s+to\s+cure|cure\s+process)'
+    - '(opportunity\s+to\s+cure|cure\s+process)\s.{0,120}(repealed|eliminated|removed|abolished)'
+    - 'opportunity\s+to\s+cure\s.{0,120}(is|are)\s+(hereby\s+)?(repealed|eliminated|removed|abolished)'
+
 # ---------------------------------------------------------------------------
 # EXPANSIVE
 # ---------------------------------------------------------------------------
@@ -184,6 +210,9 @@
   any:
     - 'automatic(ally)?\s+(voter\s+)?regist\w+'
     - 'automatically\s+registered\s+to\s+vote'
+  none:
+    - '(repeal|eliminat|discontinu|abolish|prohibit)\w*\s.{0,80}automatic'
+    - 'automatic\w*\s.{0,120}(repealed|eliminated|discontinued|abolished|prohibited)'
 
 - id: E-REG-002
   category: expansive
@@ -214,6 +243,9 @@
     - 'preregist\w+'
     - 'pre.regist\w+\s.{0,60}(16|17|sixteen|seventeen)'
     - '(16|sixteen|17|seventeen)\s+years?\s+of\s+age\s.{0,60}(preregister|pre.register|register\s+to\s+vote)'
+  none:
+    - '(repeal|eliminat|discontinu|abolish|prohibit)\w*\s.{0,80}preregist'
+    - 'preregist\w+\s.{0,120}(repealed|eliminated|discontinued|abolished|prohibited)'
 
 - id: E-FEL-001
   category: expansive
@@ -233,6 +265,8 @@
     - 'no.excuse\s+(absentee|mail)'
     - '(any\s+(qualified|registered)\s+(voter|elector))\s.{0,80}may\s+vote\s.{0,40}(absentee|by\s+mail)'
     - '(absentee|mail)\s+ballot\s.{0,80}without\s.{0,40}(excuse|stating\s+a\s+reason|providing\s+a\s+reason)'
+  none:
+    - '(repeal|eliminat|discontinu)\w*\s.{0,80}no.excuse'
 
 - id: E-ABS-002
   category: expansive
@@ -249,6 +283,10 @@
   any:
     - '(cure|correct|remedy)\s.{0,80}(signature|defect|deficien|omission)\s.{0,80}(absentee|mail|ballot)'
     - '(notify|notif\w+)\s.{0,60}voter\s.{0,80}opportunity\s+to\s+(cure|correct)'
+  none:
+    - '(repeal|eliminat|remov|abolish)\w*\s.{0,100}(opportunity\s+to\s+cure|cure\s+process)'
+    - '(opportunity\s+to\s+cure|cure\s+process)\s.{0,120}(repealed|eliminated|removed|abolished)'
+    - 'cure\s.{0,120}(is|are)\s+(hereby\s+)?(repealed|eliminated|removed|abolished)'
 
 - id: E-ABS-004
   category: expansive
@@ -296,6 +334,9 @@
     - '(additional|increas|expand)\w*\s.{0,60}(polling\s+(place|location|site)|vote\s+center)'
     - 'curbside\s+voting'
     - '(extend|lengthen)\w*\s.{0,60}(polling|voting)\s+hours'
+  none:
+    - '(prohibit|repeal|eliminat|unlawful)\w*\s.{0,80}curbside'
+    - 'curbside\s+voting\s.{0,80}(prohibited|unlawful|repealed|eliminated)'
 
 - id: E-LANG-001
   category: expansive

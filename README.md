@@ -46,11 +46,27 @@ version) is fetched first; the LegiScan `url` is the fallback — including when
 the state link turns out to be a JS viewer shell or a scanned PDF that yields
 no text. A sample sheet is at `examples/input.tsv`.
 
+Source candidates are tried in order until one yields real text:
+
+1. `state_link`
+2. known plain-text mirrors of viewer-shell hosts (e.g. Virginia's new LIS is
+   a JS app with no server-rendered text; its legacy CGI serves the same
+   chaptered act as plain HTML)
+3. the LegiScan **API** (`op=getBillText`) when the `LEGISCAN_API_KEY`
+   environment variable is set — strongly recommended: a free key from
+   legiscan.com makes every bill fetchable even when its state site is a
+   JS shell, a scanned PDF, or blocks server traffic
+4. the LegiScan `url` page itself
+
+When every candidate fails, the bill is coded `unprocessed` and the exact
+per-source failure detail is shown on the bill card and written to the
+`error` column of `impacts.csv`.
+
 ### Output
 
 - **`impacts.csv`** — the coding dataset: one row per Impact/Bill
   (`bill_number, state, category, policy_areas, rule_ids, n_provisions,
-  needs_review, status, source_used, text_sha256`)
+  needs_review, status, source_used, text_sha256, error`)
 - **`evidence.jsonl`** — the same records with full evidence detail: for every
   match, the provision id, rule id, and the text excerpt that triggered it.
 

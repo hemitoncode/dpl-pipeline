@@ -88,6 +88,43 @@ describe("restrictive", () => {
     ).toEqual(new Set(["restrictive"]));
   });
 
+  // Direction inversions: repealing a convenience must never code expansive.
+  it("AVR repeal is restrictive, not expansive", () => {
+    expect(
+      categories("The provisions establishing automatic voter registration are repealed."),
+    ).toEqual(new Set(["restrictive"]));
+  });
+
+  it("preregistration repeal is restrictive, not expansive", () => {
+    expect(
+      categories(
+        "The department shall discontinue preregistration of persons sixteen years of age.",
+      ),
+    ).toEqual(new Set(["restrictive"]));
+  });
+
+  it("online registration repeal is restrictive, not expansive", () => {
+    expect(categories("Online voter registration is hereby repealed.")).toEqual(
+      new Set(["restrictive"]),
+    );
+  });
+
+  it("curbside voting ban is restrictive, not expansive", () => {
+    expect(
+      categories(
+        "Curbside voting is prohibited; every voter shall enter the polling place to cast a ballot.",
+      ),
+    ).toEqual(new Set(["restrictive"]));
+  });
+
+  it("cure elimination is restrictive, not expansive", () => {
+    expect(
+      categories(
+        "The opportunity to cure a signature defect on an absentee ballot envelope is eliminated.",
+      ),
+    ).toEqual(new Set(["restrictive"]));
+  });
+
   it("drop box cap", () => {
     expect(
       categories(

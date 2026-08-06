@@ -50,7 +50,13 @@ export default function Page() {
   const run = useCallback(async () => {
     let text = sheet;
     const file = fileRef.current?.files?.[0];
-    if (file) text = await file.text();
+    if (file) {
+      text = await file.text();
+      // One-shot: clear the picker so later runs use the textarea unless a
+      // file is chosen again (otherwise a stale file silently wins).
+      fileRef.current!.value = "";
+      setSheet(text);
+    }
     let bills;
     try {
       bills = parseSheet(text);
@@ -88,6 +94,7 @@ export default function Page() {
           text_sha256: "",
           status: "fetch_error",
           needs_review: true,
+          error: e instanceof Error ? e.message : String(e),
         });
         console.error(`classify failed for ${bill.bill_number}:`, e);
       }
@@ -267,6 +274,7 @@ function BillCard({
           <div className="bill-error" key={i}>
             Could not process this bill ({r.status}). Check the source links, or retry — it is{" "}
             <i>not</i> coded neutral.
+            {r.error && <div className="error-detail">{r.error}</div>}
           </div>
         ) : (
           <div className="impact-row" key={i}>

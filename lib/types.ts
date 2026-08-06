@@ -64,4 +64,6 @@ export interface ImpactRecord {
   text_sha256: string;
   status: BillStatus;
   needs_review: boolean;
+  /** Human-readable failure detail when status != "ok" (else ""). */
+  error: string;
 }

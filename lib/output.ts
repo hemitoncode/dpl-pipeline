@@ -21,6 +21,7 @@ export const CSV_COLUMNS = [
   "status",
   "source_used",
   "text_sha256",
+  "error",
 ] as const;
 
 function csvCell(value: string | number): string {
@@ -43,6 +44,7 @@ export function makeCsv(records: ImpactRecord[]): string {
         r.status,
         r.source_used,
         r.text_sha256,
+        r.error,
       ]
         .map(csvCell)
         .join(","),
@@ -58,6 +60,7 @@ export function makeJsonl(records: ImpactRecord[]): string {
         JSON.stringify({
           bill_number: r.bill_number,
           category: r.category,
+          error: r.error,
           evidence: r.evidence,
           n_provisions: r.n_provisions,
           needs_review: r.needs_review,

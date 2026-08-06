@@ -240,6 +240,13 @@ details.evidence summary { cursor: pointer; font-size: 12.5px; color: var(--acce
 .ev-item .meta { font-family: var(--mono); font-size: 10.5px; color: var(--ink-soft); margin-bottom: 3px; }
 .ev-item blockquote { font-family: var(--serif); font-style: italic; }
 .bill-error { padding: 13px 18px; color: var(--error); font-size: 13.5px; }
+.bill-error .error-detail {
+  margin-top: 6px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  word-break: break-word;
+}
 
 footer.colophon {
   padding: 26px clamp(20px, 5vw, 64px);

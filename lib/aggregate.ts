@@ -23,6 +23,7 @@ export function aggregate(result: BillResult): ImpactRecord[] {
     source_used: result.sourceUsed,
     text_sha256: result.textSha256,
     status: result.status,
+    error: result.status === "ok" ? "" : result.error,
   };
 
   if (result.status !== "ok") {
@@ -58,11 +59,12 @@ export function aggregate(result: BillResult): ImpactRecord[] {
   for (const category of CATEGORIES) {
     const catMatches = byCategory.get(category);
     if (!catMatches?.length) continue;
-    catMatches.sort((a, b) =>
-      a.provisionId === b.provisionId
-        ? a.ruleId.localeCompare(b.ruleId)
-        : a.provisionId.localeCompare(b.provisionId),
-    );
+    // Numeric compare on the provision number so P1000 sorts after P999.
+    catMatches.sort((a, b) => {
+      const pa = Number(a.provisionId.slice(1));
+      const pb = Number(b.provisionId.slice(1));
+      return pa === pb ? a.ruleId.localeCompare(b.ruleId) : pa - pb;
+    });
     records.push({
       ...base,
       category,

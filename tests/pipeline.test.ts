@@ -9,7 +9,7 @@ import { aggregate } from "@/lib/aggregate";
 import { extractDocText, normalize } from "@/lib/extract";
 import { _seedCache } from "@/lib/fetchDoc";
 import { makeCsv, makeJsonl } from "@/lib/output";
-import { processBill } from "@/lib/pipeline";
+import { processBill, sourceCandidates } from "@/lib/pipeline";
 import { loadRules } from "@/lib/rules";
 import { segment } from "@/lib/segment";
 import { parseSheet } from "@/lib/sheet";
@@ -98,6 +98,42 @@ describe("pipeline + aggregate", () => {
     expect(makeCsv(a)).toBe(makeCsv(b));
     expect(makeJsonl(a)).toBe(makeJsonl(b));
     expect(a[0].text_sha256).toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe("sourceCandidates", () => {
+  const vaBill = {
+    bill_number: "VA HB 967",
+    url: "https://legiscan.com/VA/text/HB967/id/3423959",
+    state_link: "https://lis.virginia.gov/bill-details/20261/HB967/text/CHAP0717",
+  };
+
+  it("adds the VA legacy plain-HTML mirror after the SPA link", () => {
+    const candidates = sourceCandidates(vaBill);
+    expect(candidates[0]).toBe(vaBill.state_link);
+    expect(candidates[1]).toBe("https://legacylis.virginia.gov/cgi-bin/legp604.exe?261+ful+CHAP0717");
+    expect(candidates).toContain(vaBill.url);
+  });
+
+  it("prefers the LegiScan API over the viewer page when a key is set", () => {
+    process.env.LEGISCAN_API_KEY = "test-key";
+    try {
+      const candidates = sourceCandidates(vaBill);
+      const api = candidates.indexOf("legiscan-api://3423959");
+      expect(api).toBeGreaterThan(-1);
+      expect(api).toBeLessThan(candidates.indexOf(vaBill.url));
+    } finally {
+      delete process.env.LEGISCAN_API_KEY;
+    }
+  });
+
+  it("skips empty inputs and dedupes", () => {
+    const candidates = sourceCandidates({
+      bill_number: "XX HB 1",
+      url: "https://x.test/a",
+      state_link: "https://x.test/a",
+    });
+    expect(candidates).toEqual(["https://x.test/a"]);
   });
 });
 
