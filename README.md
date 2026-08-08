@@ -1,4 +1,4 @@
-# dpl-pipeline — Voting Legislation Impact Coder
+# DPL Pipeline — Voting Legislation Impact Coder
 
 A Next.js app that deterministically codes voting legislation at the
 **Impact / Bill** level.
